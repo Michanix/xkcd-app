@@ -3,6 +3,7 @@
 /server/package-lock.json
 # dependencies
 /client/node_modules
+/client/build
 /server/node_modules
 /.pnp
 .pnp.js

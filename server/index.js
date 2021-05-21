@@ -7,7 +7,7 @@ const app = express();
 
 app.use(cors());
 const corsOptions = {
-    origin: 'http://localhost:3000'
+    origin: 'http://localhost:5000'
 }
 const fetchOptions = {
     method: 'GET'

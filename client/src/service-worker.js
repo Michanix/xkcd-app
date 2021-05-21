@@ -12,8 +12,10 @@
 import {clientsClaim} from 'workbox-core';
 import {ExpirationPlugin} from 'workbox-expiration';
 import {precacheAndRoute, createHandlerBoundToURL} from 'workbox-precaching';
-import {registerRoute} from 'workbox-routing';
-import {StaleWhileRevalidate} from 'workbox-strategies';
+import {registerRoute, setCatchHandler} from 'workbox-routing';
+import {CacheFirst, StaleWhileRevalidate} from 'workbox-strategies';
+import {CacheableResponsePlugin} from 'workbox-cacheable-response';
+
 
 clientsClaim();
 
@@ -22,6 +24,16 @@ clientsClaim();
 // This variable must be present somewhere in your service worker file,
 // even if you decide not to use precaching. See https://cra.link/PWA
 precacheAndRoute(self.__WB_MANIFEST);
+
+// Catch routing errors, like if the user is offline
+setCatchHandler(async ({event}) => {
+  // Return the precached offline page if a document is being requested
+  if (event.request.destination === 'document') {
+    return matchPrecache('/offline.html');
+  }
+
+  return Response.error();
+});
 
 // Set up App Shell-style routing, so that all navigation requests
 // are fulfilled with your index.html shell. Learn more at
@@ -48,17 +60,55 @@ registerRoute(
     createHandlerBoundToURL(process.env.PUBLIC_URL + '/index.html'),
 );
 
+// Cache CSS, JS, and Web Worker requests with a Stale While Revalidate strategy
+registerRoute(
+    // Check to see if the request's destination is style for stylesheets, script for JavaScript, or worker for web worker
+    ({request}) =>
+      request.destination === 'style' ||
+    request.destination === 'script' ||
+    request.destination === 'worker',
+    // Use a Stale While Revalidate caching strategy
+    new StaleWhileRevalidate({
+    // Put all cached files in a cache named 'assets'
+      cacheName: 'assets',
+      plugins: [
+      // Ensure that only requests that result in a 200 status are cached
+        new CacheableResponsePlugin({
+          statuses: [200],
+        }),
+      ],
+    }),
+);
+
 // An example runtime caching route for requests that aren't handled by the
 // precache, in this case same-origin .png requests like those from in public/
 registerRoute(
     // Add in any other file extensions or routing criteria as needed.
     ({url}) => url.origin === self.location.origin && url.pathname.endsWith('.png'), // Customize this strategy as needed, e.g., by changing to CacheFirst.
-    new StaleWhileRevalidate({
+    new CacheFirst({
       cacheName: 'images',
       plugins: [
       // Ensure that once this runtime cache reaches a maximum size the
       // least-recently used images are removed.
         new ExpirationPlugin({maxEntries: 50}),
+      ],
+    }),
+);
+
+registerRoute(
+    ({url}) =>
+      url.origin === 'https://imgs.xkcd.com/' && url.pathname.startsWith('/comics/'),
+    new CacheFirst({
+      cacheName: 'comics',
+      plugins: [
+        new CacheableResponsePlugin({
+          statuses: [0, 200],
+        }),
+        // Don't cache more than 50 items, and expire them after 30 days
+        new ExpirationPlugin({
+          maxEntries: 50,
+          maxAgeSeconds: 60 * 60 * 24 * 30, // 30 Days
+        }),
       ],
     }),
 );
@@ -69,6 +119,7 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
+  console.log(event);
 });
 
 // Any other custom service worker logic can go here.
