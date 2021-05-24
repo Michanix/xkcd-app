@@ -5,7 +5,7 @@ to show comics.
 ## Installation
 
 ```
-git clone 
+git clone https://github.com/Michanix/xkcd-app.git
 cd xkcd-app
 ```
 
