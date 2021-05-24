@@ -32,4 +32,4 @@ npm build
 serve -s build
 ```
 
-Go to [](http://localhost:5000/) and read some comics!
+Go to [http://localhost:5000/](http://localhost:5000/) and read some comics!
