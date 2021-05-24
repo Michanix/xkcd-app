@@ -110,6 +110,7 @@ export default class Page extends React.Component {
 
   render() {
     const {img, alt, title} = this.state.data;
+
     return (
       <div>
         <Grid container
@@ -123,7 +124,8 @@ export default class Page extends React.Component {
           </Grid>
           <Grid item>
             {
-            img !== undefined ? <img src={img} alt={alt}/> :
+            img !== undefined ?
+            <img src={img} alt={alt} /> :
             <Typography variant="h6">
               Oof, seems like your reached the end :s
             </Typography>
